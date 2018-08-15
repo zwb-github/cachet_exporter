@@ -13,9 +13,9 @@ import (
 
 var (
 	version       = "dev"
-	listenAddress = kingpin.Flag("web.listen-address", "Address to bind the server").Default(":9470").String()
+	listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry").Default(":9470").String()
 	metricsPath   = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
-	apiURL        = kingpin.Flag("cachet.api-url", "Cachet API URL").OverrideDefaultFromEnvar("CACHET_API_URL").String()
+	apiURL        = kingpin.Flag("cachet.api-url", "Your Cachet instance API URL").OverrideDefaultFromEnvar("CACHET_API_URL").String()
 )
 
 func main() {
