@@ -5,16 +5,16 @@ import (
 )
 
 type Client interface {
-	GetAllComponentsGroups() ([]cachet.ComponentGroup, error)
+	GetAllComponentGroups() ([]cachet.ComponentGroup, error)
 	GetAllIncidentsByStatus(status int) ([]cachet.Incident, error)
-	Ping() (string, error)
+	Ping() (float64, error)
 }
 
 type cachetClient struct {
 	client *cachet.Client
 }
 
-func (c *cachetClient) GetAllComponentsGroups() ([]cachet.ComponentGroup, error) {
+func (c *cachetClient) GetAllComponentGroups() ([]cachet.ComponentGroup, error) {
 	groups, _, err := c.client.ComponentGroups.GetAll(&cachet.ComponentGroupsQueryParams{})
 
 	if err != nil {
@@ -24,9 +24,9 @@ func (c *cachetClient) GetAllComponentsGroups() ([]cachet.ComponentGroup, error)
 	return groups.ComponentGroups, nil
 }
 
-func (c *cachetClient) Ping() (string, error) {
-	response, _, err := c.client.General.Ping()
-	return response, err
+func (c *cachetClient) Ping() (float64, error) {
+	_, _, err := c.client.General.Ping()
+	return 1, err
 }
 
 func NewCachetClient(apiURL string) (Client, error) {

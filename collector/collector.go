@@ -50,7 +50,7 @@ func NewCachetCollector(client client.Client) prometheus.Collector {
 			nil,
 		),
 		incidentsTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "cachet_incidents_total"),
+			prometheus.BuildFQName(namespace, "", "incidents_total"),
 			"Total of incidents by status",
 			[]string{"status", "group_name", "component_name"},
 			nil,
@@ -78,14 +78,14 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 	_, err := c.client.Ping()
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
-		log.With("error", err).Error("Failed to scrape Cachet")
+		log.With("error", err).Error("failed to scrape Cachet")
 		return
 	}
 
-	groups, err := c.client.GetAllComponentsGroups()
+	groups, err := c.client.GetAllComponentGroups()
 
 	if err != nil {
-		log.With("error", err).Error("Failed to scrape Gropu Components")
+		log.With("error", err).Error("failed to scrape Group Components")
 	}
 
 	incidents := map[int][]cachet.Incident{
@@ -104,7 +104,7 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 func getIncidentsByStatus(c *cachetCollector, status int) []cachet.Incident {
 	incidents, err := c.client.GetAllIncidentsByStatus(status)
 	if err != nil {
-		log.With("error", err).Error("Failed to scrape Gropu Components")
+		log.With("error", err).Error("failed to scrape Group Components")
 	}
 	return incidents
 }
@@ -123,7 +123,6 @@ func createIncidentsTotalMetricByComponent(c *cachetCollector, group cachet.Comp
 				componentIncidents = append(componentIncidents, incident)
 			}
 		}
-
 		ch <- prometheus.MustNewConstMetric(c.incidentsTotal, prometheus.GaugeValue, float64(len(componentIncidents)), strconv.Itoa(status), group.Name, component.Name)
 	}
 
