@@ -27,9 +27,10 @@ type cachetCollector struct {
 	mutex  sync.RWMutex
 	client client.Client
 
-	up             *prometheus.Desc
-	scrapeDuration *prometheus.Desc
-	incidentsTotal *prometheus.Desc
+	up              *prometheus.Desc
+	scrapeDuration  *prometheus.Desc
+	incidentsTotal  *prometheus.Desc
+	componentsTotal *prometheus.Desc
 }
 
 // NewCachetCollector returns a prometheus collector which exports
@@ -53,6 +54,12 @@ func NewCachetCollector(client client.Client) prometheus.Collector {
 			prometheus.BuildFQName(namespace, "", "incidents_total"),
 			"Total of incidents by status",
 			[]string{"status", "group_name", "component_name"},
+			nil,
+		),
+		componentsTotal: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "components_total"),
+			"Total of components by status",
+			[]string{"status", "group_name"},
 			nil,
 		),
 	}
@@ -93,12 +100,31 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 		2: getIncidentsByStatus(c, 2),
 		3: getIncidentsByStatus(c, 3),
 	}
+
 	for _, group := range groups {
+		createComponentsMetric(c, group, ch)
 		createIncidentsTotalMetric(c, group, incidents, ch)
 	}
 
 	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
 	ch <- prometheus.MustNewConstMetric(c.scrapeDuration, prometheus.GaugeValue, time.Since(start).Seconds())
+}
+
+func createComponentsMetric(c *cachetCollector, group cachet.ComponentGroup, ch chan<- prometheus.Metric) {
+	componentsStatus := map[int][]cachet.Component{
+		1: make([]cachet.Component, 0),
+		2: make([]cachet.Component, 0),
+		3: make([]cachet.Component, 0),
+		4: make([]cachet.Component, 0),
+	}
+	for _, component := range group.EnabledComponents {
+		components := append(componentsStatus[component.Status], component)
+		componentsStatus[component.Status] = components
+	}
+
+	for status, components := range componentsStatus {
+		ch <- prometheus.MustNewConstMetric(c.componentsTotal, prometheus.GaugeValue, float64(len(components)), strconv.Itoa(status), group.Name)
+	}
 }
 
 func getIncidentsByStatus(c *cachetCollector, status int) []cachet.Incident {
