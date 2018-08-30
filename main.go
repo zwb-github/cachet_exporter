@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ContaAzul/cachet_exporter/client"
 	"github.com/ContaAzul/cachet_exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,7 +30,12 @@ func main() {
 		log.Fatal("You must provide your Cachet API URL")
 	}
 
-	prometheus.MustRegister(collector.NewCachetCollector(*apiURL))
+	client, err := client.NewCachetClient(*apiURL)
+	if err != nil {
+		log.With("error", err.Error()).Fatal("Failed to create a new Cachet client")
+	}
+
+	prometheus.MustRegister(collector.NewCachetCollector(client))
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
