@@ -89,19 +89,19 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	incidents := map[int][]cachet.Incident{
-		1: getIncidentsByStatus(c, 1),
-		2: getIncidentsByStatus(c, 2),
-		3: getIncidentsByStatus(c, 3),
+		1: c.getIncidentsByStatus(1),
+		2: c.getIncidentsByStatus(2),
+		3: c.getIncidentsByStatus(3),
 	}
 	for _, group := range groups {
-		createIncidentsTotalMetric(c, group, incidents, ch)
+		c.createIncidentsTotalMetric(group, incidents, ch)
 	}
 
 	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
 	ch <- prometheus.MustNewConstMetric(c.scrapeDuration, prometheus.GaugeValue, time.Since(start).Seconds())
 }
 
-func getIncidentsByStatus(c *cachetCollector, status int) []cachet.Incident {
+func (c *cachetCollector) getIncidentsByStatus(status int) []cachet.Incident {
 	incidents, err := c.client.GetAllIncidentsByStatus(status)
 	if err != nil {
 		log.With("error", err).Error("failed to scrape Group Components")
@@ -109,13 +109,13 @@ func getIncidentsByStatus(c *cachetCollector, status int) []cachet.Incident {
 	return incidents
 }
 
-func createIncidentsTotalMetric(c *cachetCollector, group cachet.ComponentGroup, incidents map[int][]cachet.Incident, ch chan<- prometheus.Metric) {
+func (c *cachetCollector) createIncidentsTotalMetric(group cachet.ComponentGroup, incidents map[int][]cachet.Incident, ch chan<- prometheus.Metric) {
 	for _, component := range group.EnabledComponents {
-		createIncidentsTotalMetricByComponent(c, group, component, incidents, ch)
+		c.createIncidentsTotalMetricByComponent(group, component, incidents, ch)
 	}
 }
 
-func createIncidentsTotalMetricByComponent(c *cachetCollector, group cachet.ComponentGroup, component cachet.Component, incidents map[int][]cachet.Incident, ch chan<- prometheus.Metric) {
+func (c *cachetCollector) createIncidentsTotalMetricByComponent(group cachet.ComponentGroup, component cachet.Component, incidents map[int][]cachet.Incident, ch chan<- prometheus.Metric) {
 	for status, allIncidents := range incidents {
 		componentIncidents := make([]cachet.Incident, 0)
 		for _, incident := range allIncidents {
