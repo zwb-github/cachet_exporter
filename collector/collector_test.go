@@ -18,8 +18,9 @@ type dummyClient struct {
 
 func (d *dummyClient) GetAllComponentGroups() ([]cachet.ComponentGroup, error) {
 	components := []cachet.Component{cachet.Component{
-		ID:   1,
-		Name: "Component",
+		ID:     1,
+		Name:   "Component",
+		Status: 2,
 	}}
 	return []cachet.ComponentGroup{cachet.ComponentGroup{EnabledComponents: components}}, nil
 }
@@ -65,7 +66,7 @@ func TestCollectCachetUp(t *testing.T) {
 	assert.Equal(t, float64(1), *metric.GetGauge().Value)
 }
 
-func TestCollectCachetInsidentsByStatus(t *testing.T) {
+func TestCollectCachetInsidentsTotal(t *testing.T) {
 	client := &dummyClient{
 		IncidentsTotal: 10,
 	}
@@ -79,6 +80,22 @@ func TestCollectCachetInsidentsByStatus(t *testing.T) {
 
 	assert.NotNil(t, metric)
 	assert.Equal(t, float64(10), *metric.GetGauge().Value)
+}
+
+func TestCollectCachetComponetnsTotal(t *testing.T) {
+	client := &dummyClient{}
+	collector := NewCachetCollector(client)
+	ch := make(chan prometheus.Metric)
+	go func() {
+		collector.Collect(ch)
+		close(ch)
+	}()
+	metrics := getMetrics("cachet_components_total", ch)
+	assert.NotNil(t, metrics[1])
+	assert.Equal(t, float64(0), *metrics[0].GetGauge().Value)
+	assert.Equal(t, float64(1), *metrics[1].GetGauge().Value)
+	assert.Equal(t, float64(0), *metrics[2].GetGauge().Value)
+	assert.Equal(t, float64(0), *metrics[3].GetGauge().Value)
 }
 
 func getMetrics(key string, ch <-chan prometheus.Metric) []*dto.Metric {
