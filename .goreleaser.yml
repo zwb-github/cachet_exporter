@@ -1,0 +1,28 @@
+project_name: cachet_exporter
+release:
+  github:
+    owner: ContaAzul
+    name: cachet_exporter
+builds:
+- goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  env:
+  - CGO_ENABLED=0
+checksum:
+  name_template: '{{ .ProjectName }}_checksums.txt'
+archive:
+  name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
+changelog:
+  filters:
+    exclude:
+    - '^Merge (remote|branch|pull)'
+dockers:
+- image: caninjas/cachet_exporter
+  tag_templates:
+  - '{{ .Tag }}'
+  - 'v{{ .Major }}'
+  - 'v{{ .Major }}.{{ .Minor }}'
+  - latest

@@ -1,0 +1,19 @@
+dist: trusty
+sudo: required
+language: go
+go: "1.10"
+services:
+  - docker
+install: make setup install
+script: make ci
+after_success:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+  - bash <(curl -s https://codecov.io/bash)
+notifications:
+  email: false
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL http://git.io/goreleaser | bash
+    on:
+      tags: true
