@@ -73,16 +73,12 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 
 	start := time.Now()
 	log.Info("Collecting metrics from Cachet")
-	_, err := c.client.Ping()
-	if err != nil {
-		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
-		log.With("error", err).Error("failed to scrape Cachet")
-		return
-	}
 
 	groups, err := c.client.GetAllComponentGroups()
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
 		log.With("error", err).Error("failed to scrape Group Components")
+		return
 	}
 
 	incidents := map[int][]cachet.Incident{
