@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"strconv"
 	"sync"
 	"time"
 
@@ -12,6 +11,22 @@ import (
 )
 
 const namespace = "cachet"
+
+var incidentStatus = map[int]string{
+	0: "Scheduled",
+	1: "Investigating",
+	2: "Identified",
+	3: "Watching",
+	4: "Fixed",
+}
+
+var componentStatus = map[int]string{
+	0: "Unknown",
+	1: "Operational",
+	2: "Performance Issues",
+	3: "Partial Outage",
+	4: "Major Outage",
+}
 
 type cachetCollector struct {
 	mutex  sync.RWMutex
@@ -102,19 +117,19 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *cachetCollector) createComponentsMetric(group cachet.ComponentGroup, ch chan<- prometheus.Metric) {
-	componentsStatus := map[int][]cachet.Component{
+	componentsByStatus := map[int][]cachet.Component{
 		1: make([]cachet.Component, 0),
 		2: make([]cachet.Component, 0),
 		3: make([]cachet.Component, 0),
 		4: make([]cachet.Component, 0),
 	}
 	for _, component := range group.EnabledComponents {
-		components := append(componentsStatus[component.Status], component)
-		componentsStatus[component.Status] = components
+		components := append(componentsByStatus[component.Status], component)
+		componentsByStatus[component.Status] = components
 	}
 
-	for status, components := range componentsStatus {
-		ch <- prometheus.MustNewConstMetric(c.components, prometheus.GaugeValue, float64(len(components)), strconv.Itoa(status), group.Name)
+	for status, components := range componentsByStatus {
+		ch <- prometheus.MustNewConstMetric(c.components, prometheus.GaugeValue, float64(len(components)), componentStatus[status], group.Name)
 	}
 }
 
@@ -141,7 +156,7 @@ func (c *cachetCollector) createIncidentsTotalMetricByComponent(group cachet.Com
 				componentIncidents = append(componentIncidents, incident)
 			}
 		}
-		ch <- prometheus.MustNewConstMetric(c.incidents, prometheus.GaugeValue, float64(len(componentIncidents)), strconv.Itoa(status), group.Name, component.Name)
+		ch <- prometheus.MustNewConstMetric(c.incidents, prometheus.GaugeValue, float64(len(componentIncidents)), incidentStatus[status], group.Name, component.Name)
 	}
 
 }
