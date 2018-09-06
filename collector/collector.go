@@ -76,17 +76,20 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 
 	groups, err := c.client.GetAllComponentGroups()
 	if err != nil {
+		// If fails to get all components groups all metrics will be wrong,
+		// in this case it's better to stop here
 		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
 		log.With("error", err).Error("failed to scrape Group Components")
 		return
 	}
 
+	up := 1
 	incidents := map[int][]cachet.Incident{
-		0: c.getIncidentsByStatus(0),
-		1: c.getIncidentsByStatus(1),
-		2: c.getIncidentsByStatus(2),
-		3: c.getIncidentsByStatus(3),
-		4: c.getIncidentsByStatus(4),
+		0: c.getIncidentsByStatus(0, &up),
+		1: c.getIncidentsByStatus(1, &up),
+		2: c.getIncidentsByStatus(2, &up),
+		3: c.getIncidentsByStatus(3, &up),
+		4: c.getIncidentsByStatus(4, &up),
 	}
 
 	for _, group := range groups {
@@ -94,7 +97,7 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 		c.createIncidentsTotalMetric(group, incidents, ch)
 	}
 
-	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
+	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, float64(up))
 	ch <- prometheus.MustNewConstMetric(c.scrapeDuration, prometheus.GaugeValue, time.Since(start).Seconds())
 }
 
@@ -115,10 +118,11 @@ func (c *cachetCollector) createComponentsMetric(group cachet.ComponentGroup, ch
 	}
 }
 
-func (c *cachetCollector) getIncidentsByStatus(status int) []cachet.Incident {
+func (c *cachetCollector) getIncidentsByStatus(status int, up *int) []cachet.Incident {
 	incidents, err := c.client.GetAllIncidentsByStatus(status)
 	if err != nil {
 		log.With("error", err).Error("failed to scrape Group Components")
+		*up = 0
 	}
 	return incidents
 }
