@@ -81,21 +81,21 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	groups, err := c.client.GetAllComponentGroups()
-
 	if err != nil {
 		log.With("error", err).Error("failed to scrape Group Components")
 	}
 
 	incidents := map[int][]cachet.Incident{
+		0: c.getIncidentsByStatus(0),
 		1: c.getIncidentsByStatus(1),
 		2: c.getIncidentsByStatus(2),
 		3: c.getIncidentsByStatus(3),
+		4: c.getIncidentsByStatus(4),
 	}
 
 	for _, group := range groups {
 		c.createComponentsMetric(group, ch)
 		c.createIncidentsTotalMetric(group, incidents, ch)
-
 	}
 
 	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
