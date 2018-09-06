@@ -17,10 +17,10 @@ type cachetCollector struct {
 	mutex  sync.RWMutex
 	client client.Client
 
-	up              *prometheus.Desc
-	scrapeDuration  *prometheus.Desc
-	incidentsTotal  *prometheus.Desc
-	componentsTotal *prometheus.Desc
+	up             *prometheus.Desc
+	scrapeDuration *prometheus.Desc
+	incidents      *prometheus.Desc
+	components     *prometheus.Desc
 }
 
 // NewCachetCollector returns a prometheus collector which exports
@@ -40,15 +40,15 @@ func NewCachetCollector(client client.Client) prometheus.Collector {
 			nil,
 			nil,
 		),
-		incidentsTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "incidents_total"),
-			"Total of incidents by status",
+		incidents: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "incidents"),
+			"Number of incidents by status",
 			[]string{"status", "group_name", "component_name"},
 			nil,
 		),
-		componentsTotal: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "components_total"),
-			"Total of components by status",
+		components: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "components"),
+			"Number of components by status",
 			[]string{"status", "group_name"},
 			nil,
 		),
@@ -60,7 +60,8 @@ func NewCachetCollector(client client.Client) prometheus.Collector {
 func (c *cachetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.up
 	ch <- c.scrapeDuration
-	ch <- c.incidentsTotal
+	ch <- c.incidents
+	ch <- c.components
 }
 
 // Collect fetches the metrics data from the Cachet application and
@@ -114,7 +115,7 @@ func (c *cachetCollector) createComponentsMetric(group cachet.ComponentGroup, ch
 	}
 
 	for status, components := range componentsStatus {
-		ch <- prometheus.MustNewConstMetric(c.componentsTotal, prometheus.GaugeValue, float64(len(components)), strconv.Itoa(status), group.Name)
+		ch <- prometheus.MustNewConstMetric(c.components, prometheus.GaugeValue, float64(len(components)), strconv.Itoa(status), group.Name)
 	}
 }
 
@@ -140,7 +141,7 @@ func (c *cachetCollector) createIncidentsTotalMetricByComponent(group cachet.Com
 				componentIncidents = append(componentIncidents, incident)
 			}
 		}
-		ch <- prometheus.MustNewConstMetric(c.incidentsTotal, prometheus.GaugeValue, float64(len(componentIncidents)), strconv.Itoa(status), group.Name, component.Name)
+		ch <- prometheus.MustNewConstMetric(c.incidents, prometheus.GaugeValue, float64(len(componentIncidents)), strconv.Itoa(status), group.Name, component.Name)
 	}
 
 }
