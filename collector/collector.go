@@ -13,16 +13,6 @@ import (
 
 const namespace = "cachet"
 
-type metricConfig struct {
-	Name   string            `yaml:"metric_name"`
-	Labels map[string]string `yaml:"labels"`
-}
-
-// Config is the struct used to load the configurations from yaml file
-type Config struct {
-	Metrics []metricConfig `yaml:"metrics"`
-}
-
 type cachetCollector struct {
 	mutex  sync.RWMutex
 	client client.Client
