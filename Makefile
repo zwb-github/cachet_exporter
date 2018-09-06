@@ -27,7 +27,7 @@ run:
 
 # Run tests
 test:
-	go test -race -v ./...
+	GOCACHE=off go test -race -v ./...
 .PHONY: test
 
 # Run tests and show code coverage
