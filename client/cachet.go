@@ -4,6 +4,7 @@ import (
 	"github.com/andygrunwald/cachet"
 )
 
+// Client manages communication with the Cachet API.
 type Client interface {
 	GetAllComponentGroups() ([]cachet.ComponentGroup, error)
 	GetAllIncidentsByStatus(status int) ([]cachet.Incident, error)
@@ -13,6 +14,7 @@ type cachetClient struct {
 	client *cachet.Client
 }
 
+// NewCachetClient returns an initialized Cachet API client
 func NewCachetClient(apiURL string) (Client, error) {
 	client, err := cachet.NewClient(apiURL, nil)
 	if err != nil {
