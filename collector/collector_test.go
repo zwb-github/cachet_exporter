@@ -22,11 +22,9 @@ type dummyClient struct {
 }
 
 func (d *dummyClient) GetAllComponentGroups() ([]cachet.ComponentGroup, error) {
-	components := []cachet.Component{cachet.Component{
-		ID:     1,
-		Name:   "Component",
-		Status: 2,
-	}}
+	components := []cachet.Component{
+		cachet.Component{ID: 1, Name: "Component One", Status: 2},
+		cachet.Component{ID: 2, Name: "Component Two", Status: 4}}
 	return []cachet.ComponentGroup{cachet.ComponentGroup{EnabledComponents: components}}, nil
 }
 
@@ -113,7 +111,7 @@ func TestCollectCachetComponents(t *testing.T) {
 		{componentStatus[1], 0},
 		{componentStatus[2], 1},
 		{componentStatus[3], 0},
-		{componentStatus[4], 0},
+		{componentStatus[4], 1},
 	}
 	for _, mt := range metricTests {
 		assertMetric(t, metrics, mt)
