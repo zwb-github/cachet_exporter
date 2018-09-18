@@ -39,7 +39,7 @@ func main() {
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, // nolint: gas
+		fmt.Fprintf(w, // nolint: gas, errcheck
 			`
 			<html>
 			<head><title>Cachet Exporter</title></head>
