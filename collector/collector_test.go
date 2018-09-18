@@ -80,7 +80,7 @@ func TestCollectCachetIncidents(t *testing.T) {
 
 	metrics := getMetrics("cachet_incidents", ch)
 	assert.NotNil(t, metrics)
-	assert.Len(t, metrics, 5)
+	assert.Len(t, metrics, 10)
 
 	var metricTests = []metricTest{
 		{incidentStatus[0], 0},
