@@ -74,10 +74,10 @@ func TestCollectCachetIncidents(t *testing.T) {
 		collector.Collect(ch)
 		close(ch)
 	}()
-	metric := getMetrics("cachet_incidents", ch)[0]
 
-	assert.NotNil(t, metric)
-	assert.Equal(t, float64(10), *metric.GetGauge().Value)
+	metrics := getMetrics("cachet_incidents", ch)
+	assert.NotNil(t, metrics)
+	assert.Len(t, metrics, 5)
 }
 
 func TestCollectCachetComponents(t *testing.T) {
@@ -89,11 +89,8 @@ func TestCollectCachetComponents(t *testing.T) {
 		close(ch)
 	}()
 	metrics := getMetrics("cachet_components", ch)
-	assert.NotNil(t, metrics[1])
-	assert.Equal(t, float64(0), *metrics[0].GetGauge().Value)
-	assert.Equal(t, float64(1), *metrics[1].GetGauge().Value)
-	assert.Equal(t, float64(0), *metrics[2].GetGauge().Value)
-	assert.Equal(t, float64(0), *metrics[3].GetGauge().Value)
+	assert.NotNil(t, metrics)
+	assert.Len(t, metrics, 5)
 }
 
 func getMetrics(key string, ch <-chan prometheus.Metric) []*dto.Metric {

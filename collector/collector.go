@@ -118,6 +118,7 @@ func (c *cachetCollector) Collect(ch chan<- prometheus.Metric) {
 
 func (c *cachetCollector) createComponentsMetric(group cachet.ComponentGroup, ch chan<- prometheus.Metric) {
 	componentsByStatus := map[int][]cachet.Component{
+		0: make([]cachet.Component, 0),
 		1: make([]cachet.Component, 0),
 		2: make([]cachet.Component, 0),
 		3: make([]cachet.Component, 0),
