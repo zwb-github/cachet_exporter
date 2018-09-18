@@ -12,6 +12,11 @@ import (
 	assert "github.com/stretchr/testify/require"
 )
 
+type metricTest struct {
+	status string
+	value  int
+}
+
 type dummyClient struct {
 	IncidentsTotal int
 }
@@ -78,6 +83,17 @@ func TestCollectCachetIncidents(t *testing.T) {
 	metrics := getMetrics("cachet_incidents", ch)
 	assert.NotNil(t, metrics)
 	assert.Len(t, metrics, 5)
+
+	var metricTests = []metricTest{
+		{incidentStatus[0], 0},
+		{incidentStatus[1], 10},
+		{incidentStatus[2], 0},
+		{incidentStatus[3], 0},
+		{incidentStatus[4], 0},
+	}
+	for _, mt := range metricTests {
+		assertMetric(t, metrics, mt)
+	}
 }
 
 func TestCollectCachetComponents(t *testing.T) {
@@ -91,6 +107,17 @@ func TestCollectCachetComponents(t *testing.T) {
 	metrics := getMetrics("cachet_components", ch)
 	assert.NotNil(t, metrics)
 	assert.Len(t, metrics, 5)
+
+	var metricTests = []metricTest{
+		{componentStatus[0], 0},
+		{componentStatus[1], 0},
+		{componentStatus[2], 1},
+		{componentStatus[3], 0},
+		{componentStatus[4], 0},
+	}
+	for _, mt := range metricTests {
+		assertMetric(t, metrics, mt)
+	}
 }
 
 func getMetrics(key string, ch <-chan prometheus.Metric) []*dto.Metric {
@@ -106,4 +133,15 @@ func getMetrics(key string, ch <-chan prometheus.Metric) []*dto.Metric {
 		}
 	}
 	return result
+}
+
+func assertMetric(t *testing.T, metrics []*dto.Metric, expected metricTest) {
+	for _, m := range metrics {
+		for _, l := range m.GetLabel() {
+			if l.GetName() == "status" && l.GetValue() == expected.status {
+				assert.Equal(t, float64(expected.value), m.GetGauge().GetValue())
+				return
+			}
+		}
+	}
 }
