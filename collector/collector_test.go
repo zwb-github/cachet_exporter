@@ -12,16 +12,19 @@ import (
 	assert "github.com/stretchr/testify/require"
 )
 
+type metricTest struct {
+	status string
+	value  int
+}
+
 type dummyClient struct {
 	IncidentsTotal int
 }
 
 func (d *dummyClient) GetAllComponentGroups() ([]cachet.ComponentGroup, error) {
-	components := []cachet.Component{cachet.Component{
-		ID:     1,
-		Name:   "Component",
-		Status: 2,
-	}}
+	components := []cachet.Component{
+		cachet.Component{ID: 1, Name: "Component One", Status: 2},
+		cachet.Component{ID: 2, Name: "Component Two", Status: 4}}
 	return []cachet.ComponentGroup{cachet.ComponentGroup{EnabledComponents: components}}, nil
 }
 
@@ -33,23 +36,21 @@ func (d *dummyClient) GetAllIncidentsByStatus(status int) ([]cachet.Incident, er
 	return incidents, nil
 }
 
-func (d *dummyClient) Ping() (float64, error) {
-	return 1, nil
-}
-
 func TestDescribe(t *testing.T) {
 	client := &dummyClient{}
 	collector := NewCachetCollector(client)
 
-	ch := make(chan *prometheus.Desc, 3)
+	ch := make(chan *prometheus.Desc, 4)
 	collector.Describe(ch)
 
 	up := <-ch
 	scrapeDuration := <-ch
-	incidentsTotal := <-ch
+	incidents := <-ch
+	components := <-ch
 	assert.Contains(t, up.String(), "Cachet API is up and accepting requests")
 	assert.Contains(t, scrapeDuration.String(), "Time Cachet scrape took in seconds")
-	assert.Contains(t, incidentsTotal.String(), "Total of incidents by status")
+	assert.Contains(t, incidents.String(), "Number of incidents by status")
+	assert.Contains(t, components.String(), "Number of components by status")
 }
 
 func TestCollectCachetUp(t *testing.T) {
@@ -66,7 +67,7 @@ func TestCollectCachetUp(t *testing.T) {
 	assert.Equal(t, float64(1), *metric.GetGauge().Value)
 }
 
-func TestCollectCachetInsidentsTotal(t *testing.T) {
+func TestCollectCachetIncidents(t *testing.T) {
 	client := &dummyClient{
 		IncidentsTotal: 10,
 	}
@@ -76,13 +77,24 @@ func TestCollectCachetInsidentsTotal(t *testing.T) {
 		collector.Collect(ch)
 		close(ch)
 	}()
-	metric := getMetrics("cachet_incidents_total", ch)[0]
 
-	assert.NotNil(t, metric)
-	assert.Equal(t, float64(10), *metric.GetGauge().Value)
+	metrics := getMetrics("cachet_incidents", ch)
+	assert.NotNil(t, metrics)
+	assert.Len(t, metrics, 10)
+
+	var metricTests = []metricTest{
+		{incidentStatus[0], 0},
+		{incidentStatus[1], 10},
+		{incidentStatus[2], 0},
+		{incidentStatus[3], 0},
+		{incidentStatus[4], 0},
+	}
+	for _, mt := range metricTests {
+		assertMetric(t, metrics, mt)
+	}
 }
 
-func TestCollectCachetComponetnsTotal(t *testing.T) {
+func TestCollectCachetComponents(t *testing.T) {
 	client := &dummyClient{}
 	collector := NewCachetCollector(client)
 	ch := make(chan prometheus.Metric)
@@ -90,12 +102,20 @@ func TestCollectCachetComponetnsTotal(t *testing.T) {
 		collector.Collect(ch)
 		close(ch)
 	}()
-	metrics := getMetrics("cachet_components_total", ch)
-	assert.NotNil(t, metrics[1])
-	assert.Equal(t, float64(0), *metrics[0].GetGauge().Value)
-	assert.Equal(t, float64(1), *metrics[1].GetGauge().Value)
-	assert.Equal(t, float64(0), *metrics[2].GetGauge().Value)
-	assert.Equal(t, float64(0), *metrics[3].GetGauge().Value)
+	metrics := getMetrics("cachet_components", ch)
+	assert.NotNil(t, metrics)
+	assert.Len(t, metrics, 5)
+
+	var metricTests = []metricTest{
+		{componentStatus[0], 0},
+		{componentStatus[1], 0},
+		{componentStatus[2], 1},
+		{componentStatus[3], 0},
+		{componentStatus[4], 1},
+	}
+	for _, mt := range metricTests {
+		assertMetric(t, metrics, mt)
+	}
 }
 
 func getMetrics(key string, ch <-chan prometheus.Metric) []*dto.Metric {
@@ -111,4 +131,15 @@ func getMetrics(key string, ch <-chan prometheus.Metric) []*dto.Metric {
 		}
 	}
 	return result
+}
+
+func assertMetric(t *testing.T, metrics []*dto.Metric, expected metricTest) {
+	for _, m := range metrics {
+		for _, l := range m.GetLabel() {
+			if l.GetName() == "status" && l.GetValue() == expected.status {
+				assert.Equal(t, float64(expected.value), m.GetGauge().GetValue())
+				return
+			}
+		}
+	}
 }

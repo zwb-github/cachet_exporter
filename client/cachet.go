@@ -4,31 +4,17 @@ import (
 	"github.com/andygrunwald/cachet"
 )
 
+// Client manages communication with the Cachet API.
 type Client interface {
 	GetAllComponentGroups() ([]cachet.ComponentGroup, error)
 	GetAllIncidentsByStatus(status int) ([]cachet.Incident, error)
-	Ping() (float64, error)
 }
 
 type cachetClient struct {
 	client *cachet.Client
 }
 
-func (c *cachetClient) GetAllComponentGroups() ([]cachet.ComponentGroup, error) {
-	groups, _, err := c.client.ComponentGroups.GetAll(&cachet.ComponentGroupsQueryParams{})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return groups.ComponentGroups, nil
-}
-
-func (c *cachetClient) Ping() (float64, error) {
-	_, _, err := c.client.General.Ping()
-	return 1, err
-}
-
+// NewCachetClient returns an initialized Cachet API client
 func NewCachetClient(apiURL string) (Client, error) {
 	client, err := cachet.NewClient(apiURL, nil)
 	if err != nil {
@@ -40,9 +26,17 @@ func NewCachetClient(apiURL string) (Client, error) {
 	}, nil
 }
 
+func (c *cachetClient) GetAllComponentGroups() ([]cachet.ComponentGroup, error) {
+	groups, _, err := c.client.ComponentGroups.GetAll(&cachet.ComponentGroupsQueryParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	return groups.ComponentGroups, nil
+}
+
 func (c *cachetClient) GetAllIncidentsByStatus(status int) ([]cachet.Incident, error) {
 	incidents, _, err := c.client.Incidents.GetAll(&cachet.IncidentsQueryParams{Status: status})
-
 	if err != nil {
 		return nil, err
 	}
