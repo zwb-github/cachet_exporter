@@ -20,9 +20,8 @@ changelog:
     exclude:
     - '^Merge (remote|branch|pull)'
 dockers:
-- image: caninjas/cachet_exporter
-  tag_templates:
-  - '{{ .Tag }}'
-  - 'v{{ .Major }}'
-  - 'v{{ .Major }}.{{ .Minor }}'
-  - latest
+- image_templates:
+  - 'caninjas/cachet_exporter:latest'
+  - 'caninjas/cachet_exporter:{{ .Tag }}'
+  - 'caninjas/cachet_exporter:v{{ .Major }}'
+  - 'caninjas/cachet_exporter:v{{ .Major }}.{{ .Minor }}'
